@@ -1,0 +1,10 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint
+      run: pnpm exec oxlint --fix
+      stage_fixed: true
+
+    - name: format
+      run: pnpm exec oxfmt
+      stage_fixed: true

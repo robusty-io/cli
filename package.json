@@ -1,0 +1,47 @@
+{
+  "name": "@robusty/cli",
+  "version": "0.0.1",
+  "description": "Command-line interface for Robusty: create, manage and run tests from your terminal or CI",
+  "homepage": "https://www.robusty.io/",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robusty-io/cli.git"
+  },
+  "bin": {
+    "robusty": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "citty": "0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "lefthook": "2.1.10",
+    "oxfmt": "0.62.0",
+    "oxlint": "1.77.0",
+    "tsdown": "0.22.14",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee"
+}
