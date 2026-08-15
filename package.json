@@ -1,6 +1,6 @@
 {
   "name": "@robusty/cli",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Command-line interface for Robusty: create, manage and run tests from your terminal or CI",
   "homepage": "https://www.robusty.io/",
   "license": "MIT",
@@ -26,6 +26,7 @@
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
+    "pretest": "pnpm run build",
     "test": "vitest run"
   },
   "dependencies": {
