@@ -1,5 +1,6 @@
 import type { Config } from "./config";
-import { CliError } from "./errors";
+import { ApiError, CliError } from "./errors";
+import { apiErrorResponseSchema } from "./schemas";
 
 export interface LauncherRequestOptions {
   method?: string;
@@ -13,8 +14,8 @@ export interface LauncherRequestOptions {
 }
 
 interface QuotaInfo {
-  remaining: number | undefined;
-  limit: number | undefined;
+  remaining?: number | undefined;
+  limit?: number | undefined;
 }
 
 /**
@@ -113,30 +114,6 @@ function parseJsonBody(text: string): unknown {
   }
 }
 
-function errorField(json: unknown): string | undefined {
-  if (json && typeof json === "object" && "error" in json) {
-    const value = (json as { error?: unknown }).error;
-    return typeof value === "string" ? value : undefined;
-  }
-  return undefined;
-}
-
-function extractQuota(json: unknown): QuotaInfo | undefined {
-  if (!json || typeof json !== "object" || !("quota" in json)) {
-    return undefined;
-  }
-  const quota = (json as { quota?: unknown }).quota;
-  if (!quota || typeof quota !== "object") {
-    return undefined;
-  }
-  const record = quota as Record<string, unknown>;
-  return {
-    remaining:
-      typeof record.remaining === "number" ? record.remaining : undefined,
-    limit: typeof record.limit === "number" ? record.limit : undefined,
-  };
-}
-
 function formatQuota(quota: QuotaInfo | undefined): string {
   if (!quota || quota.remaining === undefined || quota.limit === undefined) {
     return "";
@@ -144,51 +121,83 @@ function formatQuota(quota: QuotaInfo | undefined): string {
   return ` (${quota.remaining}/${quota.limit} launches remaining this period)`;
 }
 
-function toApiError(status: number, json: unknown, debug: boolean): CliError {
-  const code = errorField(json);
-  const quota = extractQuota(json);
+function toApiError(status: number, json: unknown, debug: boolean): ApiError {
+  const result = apiErrorResponseSchema.safeParse(json);
+  const code = result.success ? result.data.error : undefined;
+  const quota = result.success ? result.data.quota : undefined;
   const hint = debugHint(debug);
 
   switch (status) {
     case 400:
-      return new CliError(
+      return new ApiError(
         `Robusty rejected the request${code ? `: ${code}` : ""}.${hint}`,
+        status,
+        code,
       );
+
     case 401:
-      return new CliError(
-        `Authentication failed: the token is missing, malformed, unknown, expired, or revoked. Check ROBUSTY_TOKEN.${hint}`,
+      return new ApiError(
+        `Authentication failed: the credential is missing, malformed, unknown, expired, or revoked.${hint}`,
+        status,
+        code,
       );
+
     case 402:
-      return new CliError(
+      return new ApiError(
         `Quota exceeded for this project${formatQuota(quota)}.${hint}`,
+        status,
+        code,
       );
+
     case 403:
       if (code === "overage_cap_exceeded") {
-        return new CliError(
+        return new ApiError(
           `Overage cap reached for this project${formatQuota(quota)}.${hint}`,
+          status,
+          code,
         );
       }
-      return new CliError(
-        `This token does not have access to the requested project.${hint}`,
+
+      return new ApiError(
+        `This credential does not have access to the requested project.${hint}`,
+        status,
+        code,
       );
+
     case 404:
-      return new CliError(`${punctuate(code ?? "Suite not found.")}${hint}`);
-    case 409:
-      return new CliError(
-        `${punctuate(code ?? "Could not allocate a launch serial.")} Try again.${hint}`,
+      return new ApiError(
+        `${punctuate(code ?? "Suite not found.")}${hint}`,
+        status,
+        code,
       );
+
+    case 409:
+      return new ApiError(
+        `${punctuate(code ?? "Could not allocate a launch serial.")} Try again.${hint}`,
+        status,
+        code,
+      );
+
     case 500:
       if (code === "authentication_unavailable") {
-        return new CliError(
+        return new ApiError(
           `Authentication is temporarily unavailable. Your token may still be valid; retry shortly.${hint}`,
+          status,
+          code,
         );
       }
-      return new CliError(
+
+      return new ApiError(
         `${punctuate(code ?? "Robusty encountered an internal error starting the launch.")}${hint}`,
+        status,
+        code,
       );
+
     default:
-      return new CliError(
+      return new ApiError(
         `Unexpected response from Robusty (HTTP ${status}).${hint}`,
+        status,
+        code,
       );
   }
 }

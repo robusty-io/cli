@@ -1,18 +1,51 @@
 import { defineCommand } from "citty";
+import type { CredentialStore } from "../auth/credential-store";
 import { loadConfig } from "../config";
-import { CliError } from "../errors";
+import { createCredentialStore } from "../auth/credential-store";
+import type { ResolvedCredential } from "../auth/credentials";
+import { resolveCredential } from "../auth/credentials";
+import type { Config } from "../config";
+import { ApiError, CliError } from "../errors";
 import type { LauncherRequestOptions } from "../http";
 import { launcherRequest } from "../http";
+import { resolveProjectLink } from "../project-link";
+import { launchStartResponseSchema } from "../schemas";
 
 export interface VariableOverride {
   name: string;
   value: string;
 }
 
-interface LaunchStartResponse {
-  launchId: string;
-  slug: string;
+export interface LaunchDependencies {
+  loadConfig: () => Config;
+  createStore: (config: Config) => CredentialStore;
+  resolveCredential: (
+    config: Config,
+    store: CredentialStore,
+  ) => Promise<ResolvedCredential | undefined>;
+  resolveLink: typeof resolveProjectLink;
+  request: (
+    config: Config,
+    path: string,
+    options?: LauncherRequestOptions,
+  ) => Promise<unknown>;
+  cwd: () => string;
 }
+
+export interface LaunchInput {
+  suite: string;
+  variableOverrides: VariableOverride[];
+  debug: boolean;
+}
+
+const defaultDependencies: LaunchDependencies = {
+  loadConfig,
+  createStore: createCredentialStore,
+  resolveCredential,
+  resolveLink: resolveProjectLink,
+  request: launcherRequest,
+  cwd: process.cwd,
+};
 
 /**
  * Extracts every `--var NAME=VALUE` / `--var=NAME=VALUE` occurrence from raw
@@ -62,6 +95,79 @@ export function parseVariableOverrides(values: string[]): VariableOverride[] {
   });
 }
 
+export async function runLaunch(
+  input: LaunchInput,
+  dependencies: LaunchDependencies = defaultDependencies,
+): Promise<void> {
+  const config = dependencies.loadConfig();
+  const store = dependencies.createStore(config);
+  const credential = await dependencies.resolveCredential(config, store);
+
+  if (!credential) {
+    throw new CliError(
+      "You are not logged in. Run robusty login, or set ROBUSTY_TOKEN to a project token in CI.",
+    );
+  }
+
+  let projectId: string | undefined;
+
+  if (credential.source === "stored") {
+    const link = await dependencies.resolveLink(dependencies.cwd());
+
+    if (!link) {
+      throw new CliError(
+        "This directory is not linked to a Robusty project. Run robusty link.",
+      );
+    }
+
+    projectId = link.projectId;
+  }
+
+  const requestOptions: LauncherRequestOptions = {
+    method: "POST",
+    body: {
+      suiteUid: input.suite,
+      variableOverrides: input.variableOverrides,
+      ...(projectId !== undefined ? { projectId } : {}),
+    },
+  };
+
+  if (input.debug) requestOptions.debug = true;
+
+  let body: unknown;
+  try {
+    body = await dependencies.request(
+      { ...config, token: credential.token },
+      "/api/launch/start",
+      requestOptions,
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      if (credential.source === "stored") {
+        await store.delete();
+
+        throw new CliError(
+          "Your saved login is no longer valid. Run robusty login again.",
+        );
+      }
+
+      throw new CliError(
+        "Authentication failed. Update the ROBUSTY_TOKEN project token in your CI secret.",
+      );
+    }
+
+    throw error;
+  }
+
+  const result = launchStartResponseSchema.safeParse(body);
+
+  if (!result.success) {
+    throw new CliError("Robusty returned an invalid launch response.");
+  }
+
+  console.log(`Launch started: ${result.data.slug}`);
+}
+
 export default defineCommand({
   meta: {
     name: "launch",
@@ -84,28 +190,14 @@ export default defineCommand({
     },
   },
   async run({ args, rawArgs }) {
-    const config = loadConfig();
     const variableOverrides = parseVariableOverrides(
       collectVarFlagValues(rawArgs),
     );
 
-    const requestOptions: LauncherRequestOptions = {
-      method: "POST",
-      body: {
-        suiteUid: args.suite,
-        variableOverrides,
-      },
-    };
-    if (args.debug) {
-      requestOptions.debug = true;
-    }
-
-    const response = await launcherRequest<LaunchStartResponse>(
-      config,
-      "/api/launch/start",
-      requestOptions,
-    );
-
-    console.log(`Launch started: ${response.slug}`);
+    await runLaunch({
+      suite: args.suite,
+      variableOverrides,
+      debug: args.debug ?? false,
+    });
   },
 });

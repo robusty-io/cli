@@ -20,7 +20,7 @@ describe("showUsage", () => {
     logSpy.mockRestore();
   });
 
-  it("shows how to obtain and set the token", async () => {
+  it("leads local users to browser login and describes the CI token", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await showUsage(
@@ -30,8 +30,9 @@ describe("showUsage", () => {
     );
 
     const output = logSpy.mock.calls[0]?.[0] as string;
-    expect(output).toContain("Project Settings");
-    expect(output).toContain("export ROBUSTY_TOKEN=");
+    expect(output).toContain("robusty login");
+    expect(output).toContain("For CI");
+    expect(output).not.toContain("export ROBUSTY_TOKEN=");
 
     logSpy.mockRestore();
   });
@@ -47,6 +48,7 @@ describe("showUsage", () => {
 
     const output = logSpy.mock.calls[0]?.[0] as string;
     expect(output).not.toContain("ROBUSTY_LAUNCHER_URL");
+    expect(output).not.toContain("ROBUSTY_WEB_URL");
 
     logSpy.mockRestore();
   });

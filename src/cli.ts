@@ -26,8 +26,14 @@ const main = defineCommand({
           await showUsage(main);
         },
       }),
+    login: () =>
+      import("./commands/login").then((m) => withErrorHandling(m.default)),
+    link: () =>
+      import("./commands/link").then((m) => withErrorHandling(m.default)),
     launch: () =>
       import("./commands/launch").then((m) => withErrorHandling(m.default)),
+    logout: () =>
+      import("./commands/logout").then((m) => withErrorHandling(m.default)),
   },
   default: "root",
 });
