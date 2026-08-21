@@ -3,7 +3,6 @@ import {
   readFile,
   rename,
   rmdir,
-  stat,
   unlink,
   writeFile,
 } from "node:fs/promises";
@@ -15,52 +14,12 @@ import type { ProjectLink } from "./schemas";
 
 export type { ProjectLink } from "./schemas";
 
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
-    throw error;
-  }
-}
-
-async function nearestGitRoot(start: string): Promise<string | undefined> {
-  if (await exists(join(start, ".git"))) return start;
-
-  const parent = dirname(start);
-
-  return parent === start ? undefined : nearestGitRoot(parent);
-}
-
 async function atomicWrite(path: string, contents: string): Promise<void> {
   const temporaryPath = `${path}.${process.pid}.${Date.now()}.tmp`;
 
   await mkdir(dirname(path), { recursive: true });
   await writeFile(temporaryPath, contents, "utf8");
   await rename(temporaryPath, path);
-}
-
-async function updateGitignore(directory: string): Promise<void> {
-  const gitRoot = await nearestGitRoot(directory);
-  if (!gitRoot) return;
-
-  const gitignorePath = join(gitRoot, ".gitignore");
-  let contents = "";
-
-  try {
-    contents = await readFile(gitignorePath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  }
-
-  if (contents.split(/\r?\n/).some((line) => line.trim() === ".robusty/"))
-    return;
-
-  const separator =
-    contents.length === 0 || contents.endsWith("\n") ? "" : "\n";
-
-  await atomicWrite(gitignorePath, `${contents}${separator}.robusty/\n`);
 }
 
 export async function writeProjectLink(
@@ -76,7 +35,6 @@ export async function writeProjectLink(
     projectName: project.name,
   };
 
-  await updateGitignore(directory);
   await atomicWrite(
     join(directory, ".robusty", "project.json"),
     `${JSON.stringify(link, null, 2)}\n`,

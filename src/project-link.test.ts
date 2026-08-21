@@ -103,54 +103,6 @@ describe("project links", () => {
     );
   });
 
-  it("creates a repository .gitignore without replacing existing content", async () => {
-    const target = join(directory, "packages", "app");
-    await mkdir(join(directory, ".git"));
-    await mkdir(target, { recursive: true });
-    await writeFile(join(directory, ".gitignore"), "dist/", "utf8");
-
-    await writeProjectLink(target, project);
-
-    await expect(readFile(join(directory, ".gitignore"), "utf8")).resolves.toBe(
-      "dist/\n.robusty/\n",
-    );
-  });
-
-  it("updates .gitignore idempotently", async () => {
-    await mkdir(join(directory, ".git"));
-    await writeProjectLink(directory, project);
-    await writeProjectLink(directory, project);
-
-    const contents = await readFile(join(directory, ".gitignore"), "utf8");
-    expect(contents).toBe(".robusty/\n");
-    expect(contents.match(/\.robusty\//g)).toHaveLength(1);
-  });
-
-  it("recognizes an existing whitespace-padded .gitignore entry", async () => {
-    await mkdir(join(directory, ".git"));
-    await writeFile(
-      join(directory, ".gitignore"),
-      "dist/\n  .robusty/  \n",
-      "utf8",
-    );
-
-    await writeProjectLink(directory, project);
-
-    await expect(readFile(join(directory, ".gitignore"), "utf8")).resolves.toBe(
-      "dist/\n  .robusty/  \n",
-    );
-  });
-
-  it("does not create .gitignore outside a Git repository", async () => {
-    await writeProjectLink(directory, project);
-
-    await expect(
-      readFile(join(directory, ".gitignore"), "utf8"),
-    ).rejects.toMatchObject({
-      code: "ENOENT",
-    });
-  });
-
   it("deletes the nearest project link and empty metadata directory", async () => {
     const nested = join(directory, "packages", "app");
     const child = join(nested, "src");
