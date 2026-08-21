@@ -24,8 +24,8 @@ const underline = colorize(4, 24);
 /**
  * Environment variables surfaced to users in `--help` output.
  *
- * `ROBUSTY_LAUNCHER_URL` is intentionally excluded: it's an internal-only
- * override, not part of the documented/supported interface.
+ * Service URL overrides are intentionally excluded: they are internal-only,
+ * not part of the documented/supported interface.
  *
  * There is intentionally no `--token` flag: CLI-AUTH.md requires that a
  * project token never be passed as a command-line argument (it would be
@@ -33,7 +33,7 @@ const underline = colorize(4, 24);
  * the only supported way to provide it.
  */
 const ENVIRONMENT_VARIABLES: Array<[name: string, description: string]> = [
-  ["ROBUSTY_TOKEN", "Project token used to authenticate requests (required)"],
+  ["ROBUSTY_TOKEN", "CI project token; overrides a saved browser login"],
 ];
 
 function renderEnvironmentSection(): string {
@@ -49,15 +49,17 @@ function renderEnvironmentSection(): string {
     "",
     ...lines,
     "",
-    "Create a project token in Project Settings \u2192 Tokens, then:",
+    "For local use, authenticate and link the current directory:",
     "",
-    `  ${cyan("export ROBUSTY_TOKEN=rbst_...")}`,
+    `  ${cyan("robusty login")}`,
+    "",
+    "For CI, set ROBUSTY_TOKEN from your secret manager.",
   ].join("\n");
 }
 
 /**
  * Drop-in replacement for citty's `showUsage` that appends an "ENVIRONMENT
- * VARIABLES" section to the top-level (root) help only, so required config
+ * VARIABLES" section to the top-level (root) help only, so CI configuration
  * like `ROBUSTY_TOKEN` is discoverable from `robusty --help` without
  * repeating it on every subcommand's `--help` (e.g. `robusty launch --help`).
  *

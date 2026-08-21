@@ -1,12 +1,15 @@
 import { CliError } from "./errors";
 
-/** Base URL for the Robusty launcher API, used for authenticated CLI requests. */
+/** Base URLs for the Robusty web and launcher applications. */
+const DEFAULT_WEB_URL = "https://www.robusty.io";
 const DEFAULT_LAUNCHER_URL = "https://launcher.robusty.io";
 
 export interface Config {
+  /** Robusty web application base URL, used for browser authentication. */
+  webUrl: string;
   /** Robusty launcher API base URL, used for authenticated requests such as `launch`. */
   launcherUrl: string;
-  /** Project token (`rbst_...`) used to authenticate requests, if provided. */
+  /** CI project token (`rbst_...`) used as an explicit credential override. */
   token: string | undefined;
 }
 
@@ -31,10 +34,11 @@ function normalizeUrl(rawValue: string, envVarName: string): string {
 
 function readUrl(
   env: NodeJS.ProcessEnv,
-  name: "ROBUSTY_LAUNCHER_URL",
+  name: "ROBUSTY_LAUNCHER_URL" | "ROBUSTY_WEB_URL",
   fallback: string,
 ): string {
   const rawValue = env[name]?.trim();
+
   return normalizeUrl(
     rawValue && rawValue.length > 0 ? rawValue : fallback,
     name,
@@ -53,6 +57,7 @@ function readToken(env: NodeJS.ProcessEnv): string | undefined {
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
+    webUrl: readUrl(env, "ROBUSTY_WEB_URL", DEFAULT_WEB_URL),
     launcherUrl: readUrl(env, "ROBUSTY_LAUNCHER_URL", DEFAULT_LAUNCHER_URL),
     token: readToken(env),
   };

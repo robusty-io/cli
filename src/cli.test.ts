@@ -9,9 +9,12 @@ describe("cli", () => {
 
     expect(output).toContain("USAGE");
     expect(output).toContain("launch");
+    expect(output).toContain("login");
+    expect(output).toContain("link");
+    expect(output).toContain("logout");
     expect(output).toContain("ENVIRONMENT VARIABLES");
     expect(output).toContain("ROBUSTY_TOKEN");
-    expect(output).toContain("export ROBUSTY_TOKEN=");
+    expect(output).toContain("robusty login");
   });
 
   it("omits the ENVIRONMENT VARIABLES section from subcommand help", () => {
@@ -37,12 +40,16 @@ describe("cli", () => {
       ],
       {
         encoding: "utf8",
-        env: { ...process.env, ROBUSTY_TOKEN: "" },
+        env: {
+          ...process.env,
+          ROBUSTY_TOKEN: "",
+          ROBUSTY_WEB_URL: "https://cli-test.invalid",
+        },
       },
     );
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("ROBUSTY_TOKEN");
+    expect(result.stderr).toContain("robusty login");
     expect(result.stdout).not.toContain("USAGE");
     expect(result.stderr).not.toContain("USAGE");
   });

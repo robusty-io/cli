@@ -5,6 +5,7 @@ import { launcherRequest } from "./http";
 
 function makeConfig(overrides: Partial<Config> = {}): Config {
   return {
+    webUrl: "https://www.robusty.io",
     launcherUrl: "https://launcher.robusty.io",
     token: "rbst_secret-token",
     ...overrides,
@@ -100,7 +101,7 @@ describe("launcherRequest", () => {
     {
       status: 401,
       body: { success: false, error: "unauthorized" },
-      expected: /ROBUSTY_TOKEN/,
+      expected: /credential is missing/,
     },
     {
       status: 402,

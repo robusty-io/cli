@@ -14,3 +14,16 @@ export class CliError extends Error {
     this.exitCode = exitCode;
   }
 }
+
+/** An expected HTTP failure whose status and machine-readable code are retained. */
+export class ApiError extends CliError {
+  readonly status: number;
+  readonly code: string | undefined;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
