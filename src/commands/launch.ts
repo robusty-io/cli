@@ -8,6 +8,8 @@ import type { Config } from "../config";
 import { ApiError, CliError } from "../errors";
 import type { LauncherRequestOptions } from "../http";
 import { launcherRequest } from "../http";
+import { observeLaunch } from "../launch-observer";
+import { createLaunchRenderer } from "../launch-ui";
 import { resolveProjectLink } from "../project-link";
 import { launchStartResponseSchema } from "../schemas";
 
@@ -29,6 +31,8 @@ export interface LaunchDependencies {
     path: string,
     options?: LauncherRequestOptions,
   ) => Promise<unknown>;
+  observe: typeof observeLaunch;
+  createRenderer: typeof createLaunchRenderer;
   cwd: () => string;
 }
 
@@ -44,6 +48,8 @@ const defaultDependencies: LaunchDependencies = {
   resolveCredential,
   resolveLink: resolveProjectLink,
   request: launcherRequest,
+  observe: observeLaunch,
+  createRenderer: createLaunchRenderer,
   cwd: process.cwd,
 };
 
@@ -134,6 +140,8 @@ export async function runLaunch(
 
   if (input.debug) requestOptions.debug = true;
 
+  console.log("Creating test launch...");
+
   let body: unknown;
   try {
     body = await dependencies.request(
@@ -165,7 +173,36 @@ export async function runLaunch(
     throw new CliError("Robusty returned an invalid launch response.");
   }
 
-  console.log(`Launch started: ${result.data.slug}`);
+  const launchUrl = new URL(
+    `/project/${encodeURIComponent(result.data.projectId)}/launches/${encodeURIComponent(result.data.slug)}`,
+    config.webUrl,
+  ).toString();
+  console.log(`Launch created: ${launchUrl}`);
+
+  const renderer = dependencies.createRenderer(result.data.total);
+  renderer.start();
+
+  let launchResult;
+  try {
+    launchResult = await dependencies.observe(
+      config,
+      {
+        slug: result.data.slug,
+        wsTicket: result.data.wsTicket,
+        total: result.data.total,
+      },
+      { onUpdate: renderer.update, debug: input.debug },
+    );
+  } catch (error) {
+    renderer.stop();
+    throw error;
+  }
+
+  renderer.finish(launchResult, launchUrl);
+
+  if (launchResult.failed > 0) {
+    process.exitCode = 1;
+  }
 }
 
 export default defineCommand({
@@ -186,7 +223,7 @@ export default defineCommand({
     debug: {
       type: "boolean",
       description:
-        "Print request/response details to stderr for troubleshooting",
+        "Print HTTP and WebSocket details to stderr for troubleshooting",
     },
   },
   async run({ args, rawArgs }) {

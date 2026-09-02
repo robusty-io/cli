@@ -29,10 +29,50 @@ export const cliProjectsResponseSchema = z.object({
 
 export const launchStartResponseSchema = z.object({
   launchId: nonBlankString,
+  projectId: nonBlankString,
   slug: nonBlankString,
+  total: z.number().int().nonnegative(),
+  wsTicket: nonBlankString,
+  quota: z
+    .object({
+      remaining: z.number().optional(),
+      limit: z.number().optional(),
+    })
+    .loose()
+    .optional(),
+  error: z.string().optional(),
 });
 
 export type LaunchStartResponse = z.infer<typeof launchStartResponseSchema>;
+
+export const launchServerMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("frame"), data: z.string() }),
+  z.object({ type: z.literal("url"), url: z.string() }),
+  z.object({ type: z.literal("info"), content: z.string() }),
+  z.object({ type: z.literal("reasoning"), content: z.string() }),
+  z.object({
+    type: z.literal("action"),
+    content: z.string(),
+    screenshot_url: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("status"),
+    status: z.enum(["passed", "failed"]),
+    content: z.string(),
+  }),
+  z.object({ type: z.literal("error"), content: z.string() }),
+]);
+
+export type LaunchServerMessage = z.infer<typeof launchServerMessageSchema>;
+
+export const launchServerEnvelopeSchema = z.object({
+  testCaseUid: nonBlankString,
+  testCaseSlug: nonBlankString,
+  logId: z.string().nullable(),
+  message: launchServerMessageSchema,
+});
+
+export type LaunchServerEnvelope = z.infer<typeof launchServerEnvelopeSchema>;
 
 export const projectLinkSchema = z.object({
   projectId: nonBlankString,
