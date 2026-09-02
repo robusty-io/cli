@@ -36,6 +36,34 @@ const ENVIRONMENT_VARIABLES: Array<[name: string, description: string]> = [
   ["ROBUSTY_TOKEN", "CI project token; overrides a saved browser login"],
 ];
 
+/**
+ * Per-command usage examples appended to a subcommand's `--help` output.
+ *
+ * citty has no native "examples" concept, so these are rendered here (keyed by
+ * the subcommand's `meta.name`) in the same visual style as the sections citty
+ * renders itself.
+ */
+const COMMAND_EXAMPLES: Record<string, string[]> = {
+  launch: [
+    "robusty launch --suite=mt2lv --var=PROJECT_URL=https://robusty-pr-60.railway.app",
+  ],
+};
+
+function renderExamplesSection(examples: string[]): string {
+  return [
+    underline(bold("EXAMPLES")),
+    "",
+    ...examples.map((example) => `  ${cyan(example)}`),
+  ].join("\n");
+}
+
+async function resolveCommandName<T extends ArgsDef = ArgsDef>(
+  cmd: CommandDef<T>,
+): Promise<string | undefined> {
+  const meta = await cmd.meta;
+  return meta?.name;
+}
+
 function renderEnvironmentSection(): string {
   const nameWidth = Math.max(
     ...ENVIRONMENT_VARIABLES.map(([name]) => name.length),
@@ -72,7 +100,18 @@ export async function showUsage<T extends ArgsDef = ArgsDef>(
 ): Promise<void> {
   try {
     const usage = await renderUsage(cmd, parent);
-    const output = parent ? usage : `${usage}\n\n${renderEnvironmentSection()}`;
+
+    if (!parent) {
+      console.log(`${usage}\n\n${renderEnvironmentSection()}\n`);
+      return;
+    }
+
+    const commandName = await resolveCommandName(cmd);
+    const examples =
+      commandName !== undefined ? COMMAND_EXAMPLES[commandName] : undefined;
+    const output = examples
+      ? `${usage.trimEnd()}\n\n${renderExamplesSection(examples)}`
+      : usage;
     console.log(`${output}\n`);
   } catch (error) {
     console.error(error);
