@@ -1,6 +1,6 @@
-import type { Config } from "./config";
-import { CliError } from "./errors";
-import { launchServerEnvelopeSchema } from "./schemas";
+import type { Config } from "../config";
+import { CliError } from "../errors";
+import { launchServerEnvelopeSchema } from "../schemas";
 
 export type LaunchTestStatus = "running" | "passed" | "failed";
 

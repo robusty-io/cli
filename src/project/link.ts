@@ -7,12 +7,12 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { dirname, join, parse } from "node:path";
-import { CliError } from "./errors";
-import type { CliProjectSummary } from "./projects";
-import { cliProjectSummarySchema, projectLinkSchema } from "./schemas";
-import type { ProjectLink } from "./schemas";
+import { CliError } from "../errors";
+import type { CliProjectSummary } from "./api";
+import { cliProjectSummarySchema, projectLinkSchema } from "../schemas";
+import type { ProjectLink } from "../schemas";
 
-export type { ProjectLink } from "./schemas";
+export type { ProjectLink } from "../schemas";
 
 async function atomicWrite(path: string, contents: string): Promise<void> {
   const temporaryPath = `${path}.${process.pid}.${Date.now()}.tmp`;

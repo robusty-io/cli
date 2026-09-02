@@ -8,9 +8,9 @@ import type { Config } from "../config";
 import { ApiError, CliError } from "../errors";
 import type { LauncherRequestOptions } from "../http";
 import { launcherRequest } from "../http";
-import { observeLaunch } from "../launch-observer";
-import { createLaunchRenderer } from "../launch-ui";
-import { resolveProjectLink } from "../project-link";
+import { observeLaunch } from "../launch/observer";
+import { createLaunchRenderer } from "../launch/ui";
+import { resolveProjectLink } from "../project/link";
 import { launchStartResponseSchema } from "../schemas";
 
 export interface VariableOverride {

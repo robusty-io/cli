@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Config } from "./config";
-import { ApiError, CliError } from "./errors";
-import { fetchProjects } from "./projects";
+import type { Config } from "../config";
+import { ApiError, CliError } from "../errors";
+import { fetchProjects } from "./api";
 
 const config: Config = {
   webUrl: "https://www.robusty.io",

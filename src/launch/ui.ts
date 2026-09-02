@@ -1,7 +1,7 @@
 import type { Writable } from "node:stream";
 import yoctoSpinner from "yocto-spinner";
 import type { Spinner } from "yocto-spinner";
-import type { LaunchProgress, LaunchResult } from "./launch-observer";
+import type { LaunchProgress, LaunchResult } from "./observer";
 
 interface OutputStream {
   isTTY?: boolean;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Config } from "./config";
-import type { LaunchSocket, LaunchSocketCloseEvent } from "./launch-observer";
-import { launchSocketUrl, observeLaunch } from "./launch-observer";
+import type { Config } from "../config";
+import type { LaunchSocket, LaunchSocketCloseEvent } from "./observer";
+import { launchSocketUrl, observeLaunch } from "./observer";
 
 const config: Config = {
   webUrl: "https://www.robusty.io",

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLaunchRenderer } from "./launch-ui";
+import { createLaunchRenderer } from "./ui";
 
 const spinnerMocks = vi.hoisted(() => {
   const start = vi.fn();

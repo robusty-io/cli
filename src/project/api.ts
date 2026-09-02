@@ -1,9 +1,9 @@
-import type { Config } from "./config";
-import { ApiError, CliError } from "./errors";
-import { apiErrorResponseSchema, cliProjectsResponseSchema } from "./schemas";
-import type { CliProjectSummary } from "./schemas";
+import type { Config } from "../config";
+import { ApiError, CliError } from "../errors";
+import { apiErrorResponseSchema, cliProjectsResponseSchema } from "../schemas";
+import type { CliProjectSummary } from "../schemas";
 
-export type { CliProjectSummary } from "./schemas";
+export type { CliProjectSummary } from "../schemas";
 
 export async function fetchProjects(
   config: Config,
