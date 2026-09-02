@@ -4,8 +4,8 @@ import type {
   StoredCredential,
 } from "../auth/credential-store";
 import type { Config } from "../config";
-import type { ProjectLink } from "../project-link";
-import type { CliProjectSummary } from "../projects";
+import type { ProjectLink } from "../project/link";
+import type { CliProjectSummary } from "../project/api";
 import { runLogin, shouldOpenBrowser } from "./login";
 import type { LoginDependencies } from "./login";
 

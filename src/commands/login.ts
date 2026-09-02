@@ -10,9 +10,9 @@ import {
   authorizeInBrowser,
   exchangeAuthorizationCode,
 } from "../auth/browser-auth";
-import { resolveProjectLink, writeProjectLink } from "../project-link";
-import { selectProject } from "../project-selection";
-import { fetchProjects } from "../projects";
+import { resolveProjectLink, writeProjectLink } from "../project/link";
+import { selectProject } from "../project/selection";
+import { fetchProjects } from "../project/api";
 
 export interface LoginDependencies {
   loadConfig: () => Config;

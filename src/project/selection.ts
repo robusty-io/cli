@@ -1,5 +1,5 @@
-import { CliError } from "./errors";
-import type { CliProjectSummary } from "./projects";
+import { CliError } from "../errors";
+import type { CliProjectSummary } from "./api";
 
 export interface SelectProjectOptions {
   project?: string;

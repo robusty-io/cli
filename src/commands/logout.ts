@@ -3,7 +3,7 @@ import type { Config } from "../config";
 import { loadConfig } from "../config";
 import type { CredentialStore } from "../auth/credential-store";
 import { createCredentialStore } from "../auth/credential-store";
-import { deleteProjectLink } from "../project-link";
+import { deleteProjectLink } from "../project/link";
 
 export interface LogoutDependencies {
   loadConfig: () => Config;

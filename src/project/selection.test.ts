@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CliError } from "./errors";
-import { selectProject } from "./project-selection";
-import type { CliProjectSummary } from "./projects";
+import { CliError } from "../errors";
+import { selectProject } from "./selection";
+import type { CliProjectSummary } from "./api";
 
 const projects: CliProjectSummary[] = [
   { uid: "project-1", name: "Alpha" },

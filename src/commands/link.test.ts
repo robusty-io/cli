@@ -5,7 +5,7 @@ import type {
 } from "../auth/credential-store";
 import type { Config } from "../config";
 import { ApiError, CliError } from "../errors";
-import type { CliProjectSummary } from "../projects";
+import type { CliProjectSummary } from "../project/api";
 import { runLink } from "./link";
 import type { LinkDependencies } from "./link";
 

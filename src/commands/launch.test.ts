@@ -3,8 +3,8 @@ import type { CredentialStore } from "../auth/credential-store";
 import type { ResolvedCredential } from "../auth/credentials";
 import type { Config } from "../config";
 import { ApiError, CliError } from "../errors";
-import type { LaunchResult } from "../launch-observer";
-import type { LaunchRenderer } from "../launch-ui";
+import type { LaunchResult } from "../launch/observer";
+import type { LaunchRenderer } from "../launch/ui";
 import {
   collectVarFlagValues,
   parseVariableOverrides,

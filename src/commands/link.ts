@@ -4,9 +4,9 @@ import { loadConfig } from "../config";
 import type { CredentialStore } from "../auth/credential-store";
 import { createCredentialStore } from "../auth/credential-store";
 import { ApiError, CliError } from "../errors";
-import { writeProjectLink } from "../project-link";
-import { selectProject } from "../project-selection";
-import { fetchProjects } from "../projects";
+import { writeProjectLink } from "../project/link";
+import { selectProject } from "../project/selection";
+import { fetchProjects } from "../project/api";
 
 export interface LinkDependencies {
   loadConfig: () => Config;
