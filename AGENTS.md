@@ -22,7 +22,7 @@ This repo is `@robusty/cli` — the `robusty` command-line tool for creating, ma
 - Entry: `src/cli.ts` uses **citty**. Subcommands are lazily imported and wrapped by `withErrorHandling` (`src/with-error-handling.ts`). No-args behavior is a hidden `root` subcommand (not `run`) to avoid citty double-printing — do not move it back to a root `run`.
 - Commands live in `src/commands/` (one file per subcommand, e.g. `login.ts`). Domain logic lives in feature dirs under `src/` (e.g. `src/auth/`, `src/project/`, `src/launch/`).
 - **Errors:** throw `CliError` (or `ApiError`) from `src/errors.ts` for user-facing failures; these are caught centrally, printed as one line, and set `process.exitCode`. Any other thrown error bubbles up as a stack trace.
-- **HTTP:** all launcher API calls go through `launcherRequest` in `src/http.ts`, which maps HTTP status codes to `ApiError` messages. Never log the token or `Authorization` header.
+- **HTTP:** `src/http.ts` holds the generic `apiRequest` transport (Bearer auth, JSON encode/decode, `--debug` diagnostics, network-failure wrapping). Each domain wraps it with its own `mapError`. Never log the token or `Authorization` header.
 - **Validation:** external/parsed data is validated with **zod** schemas in `src/schemas.ts`.
 - **Config:** `loadConfig` (`src/config.ts`) reads env vars `ROBUSTY_TOKEN`, `ROBUSTY_WEB_URL`, `ROBUSTY_LAUNCHER_URL` (URLs are internal overrides; defaults point to robusty.io).
 - **Credentials:** `src/auth/credential-store.ts` prefers the OS keyring (`@napi-rs/keyring`) and falls back to a `0600` `auth.json` under a platform config dir.
