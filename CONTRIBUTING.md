@@ -44,9 +44,8 @@ Run these locally before opening a PR:
 
 ## Releasing
 
-Releasing new versions is automated by [changesets](https://github.com/changesets/changesets). To create a new version, add and push a changeset file by running `pnpm changesets`. After merging it to the main branch, the new version will be automatically published to npm, along with updating the changelog.
-
-Maintainers will also [create a new release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release).
+Releases are driven by [changesets](https://github.com/changesets/changesets) and
+published from CI using npm Trusted Publishing. In your PR, add a changeset describing the change: `pnpm changeset` (pick the bump level and write a short summary). Commit the generated `.changeset/*.md` file. After merging the PR, `.github/workflows/publish.yml` creates or updates a **Version Packages** PR. Maintainers review and merge that PR to automatically publish the package to npm, create the git tag and a GitHub Release.
 
 ---
 
