@@ -45,7 +45,7 @@ const ENVIRONMENT_VARIABLES: Array<[name: string, description: string]> = [
  */
 const COMMAND_EXAMPLES: Record<string, string[]> = {
   launch: [
-    "robusty launch --suite=mt2lv --var=PROJECT_URL=https://robusty-pr-60.railway.app",
+    "robusty launch --suite=mt2lv --var PROJECT_URL=https://robusty-pr-60.railway.app",
   ],
 };
 
