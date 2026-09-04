@@ -1,53 +1,69 @@
-import type { Config } from "./config";
 import { ApiError, CliError } from "./errors";
-import { apiErrorResponseSchema } from "./schemas";
 
-export interface LauncherRequestOptions {
+/** Context passed to an `ErrorMapper` when a request returns a non-2xx status. */
+export interface ErrorResponseContext {
+  status: number;
+  statusText: string;
+  /** The response body parsed as JSON, or `undefined` if empty/not JSON. */
+  json: unknown;
+  /** Whether `--debug` diagnostics were requested for this call. */
+  debug: boolean;
+}
+
+/** Translates a non-2xx HTTP response into a domain-specific `ApiError`. */
+export type ErrorMapper = (context: ErrorResponseContext) => ApiError;
+
+export interface ApiRequestOptions {
   method?: string;
   body?: unknown;
+  /** Bearer token; the `Authorization` header is omitted when absent. */
+  token?: string | undefined;
   /**
    * When true, prints request/response diagnostics to stderr (method, URL,
    * response status, and raw response body) to help debug an opaque server
    * error. Never prints the token or the `Authorization` header value.
    */
   debug?: boolean;
+  /** Maps non-2xx responses to an `ApiError`. Defaults to a generic mapper. */
+  mapError?: ErrorMapper;
 }
 
-interface QuotaInfo {
-  remaining?: number | undefined;
-  limit?: number | undefined;
+/** Appends "Pass --debug for details." unless debug is already enabled. */
+export function debugHint(debug: boolean): string {
+  return debug ? "" : " Pass --debug for details.";
 }
+
+const defaultErrorMapper: ErrorMapper = ({ status }) =>
+  new ApiError(`Unexpected response from the server (HTTP ${status}).`, status);
 
 /**
- * Sends an authenticated request to the Robusty launcher API.
+ * Sends a JSON request to `baseUrl + path` and returns the parsed JSON body.
  *
- * Throws a `CliError` if no token is configured (before any network call),
- * if the request fails to reach the server, or if the server responds with
- * a non-2xx status. Never logs the token or the `Authorization` header.
+ * Handles Bearer auth, JSON encoding/decoding, optional stderr debug logging,
+ * and network-failure wrapping. Non-2xx responses are translated by `mapError`
+ * (or a generic mapper) into an `ApiError`. Throws a `CliError` if the request
+ * fails to reach the server. Never logs the token or the `Authorization`
+ * header.
  */
-export async function launcherRequest<T>(
-  config: Config,
+export async function apiRequest<T>(
+  baseUrl: string,
   path: string,
-  options: LauncherRequestOptions = {},
+  options: ApiRequestOptions = {},
 ): Promise<T> {
-  if (!config.token) {
-    throw new CliError(
-      "No project token found. Set ROBUSTY_TOKEN to a project token created in Project Settings \u2192 Tokens.",
-    );
-  }
-
-  const url = `${config.launcherUrl}${path}`;
+  const url = `${baseUrl}${path}`;
   const method = options.method ?? "GET";
   const debug = options.debug === true;
+  const mapError = options.mapError ?? defaultErrorMapper;
 
-  const requestInit: RequestInit = {
-    method,
-    headers: {
-      Authorization: `Bearer ${config.token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
+  if (options.token !== undefined) {
+    headers.Authorization = `Bearer ${options.token}`;
+  }
+
+  const requestInit: RequestInit = { method, headers };
   if (options.body !== undefined) {
     requestInit.body = JSON.stringify(options.body);
   }
@@ -66,10 +82,8 @@ export async function launcherRequest<T>(
     if (debug) {
       logDebug(`fetch failed: ${describeError(cause)}`);
     }
-    // ROBUSTY_LAUNCHER_URL is internal-only (not a documented/supported
-    // override), so it's intentionally not named in this user-facing message.
     throw new CliError(
-      `Could not reach ${config.launcherUrl}. Check your network connection.${debugHint(debug)}`,
+      `Could not reach ${baseUrl}. Check your network connection.`,
     );
   }
 
@@ -81,7 +95,12 @@ export async function launcherRequest<T>(
   const json = parseJsonBody(text);
 
   if (!response.ok) {
-    throw toApiError(response.status, json, debug);
+    throw mapError({
+      status: response.status,
+      statusText: response.statusText,
+      json,
+      debug,
+    });
   }
 
   return json as T;
@@ -89,14 +108,6 @@ export async function launcherRequest<T>(
 
 function logDebug(message: string): void {
   console.error(`[debug] ${message}`);
-}
-
-function debugHint(debug: boolean): string {
-  return debug ? "" : " Pass --debug for details.";
-}
-
-function punctuate(message: string): string {
-  return /[.!?]$/.test(message) ? message : `${message}.`;
 }
 
 function describeError(error: unknown): string {
@@ -111,93 +122,5 @@ function parseJsonBody(text: string): unknown {
     return JSON.parse(text);
   } catch {
     return undefined;
-  }
-}
-
-function formatQuota(quota: QuotaInfo | undefined): string {
-  if (!quota || quota.remaining === undefined || quota.limit === undefined) {
-    return "";
-  }
-  return ` (${quota.remaining}/${quota.limit} launches remaining this period)`;
-}
-
-function toApiError(status: number, json: unknown, debug: boolean): ApiError {
-  const result = apiErrorResponseSchema.safeParse(json);
-  const code = result.success ? result.data.error : undefined;
-  const quota = result.success ? result.data.quota : undefined;
-  const hint = debugHint(debug);
-
-  switch (status) {
-    case 400:
-      return new ApiError(
-        `Robusty rejected the request${code ? `: ${code}` : ""}.${hint}`,
-        status,
-        code,
-      );
-
-    case 401:
-      return new ApiError(
-        `Authentication failed: the credential is missing, malformed, unknown, expired, or revoked.${hint}`,
-        status,
-        code,
-      );
-
-    case 402:
-      return new ApiError(
-        `Quota exceeded for this project${formatQuota(quota)}.${hint}`,
-        status,
-        code,
-      );
-
-    case 403:
-      if (code === "overage_cap_exceeded") {
-        return new ApiError(
-          `Overage cap reached for this project${formatQuota(quota)}.${hint}`,
-          status,
-          code,
-        );
-      }
-
-      return new ApiError(
-        `This credential does not have access to the requested project.${hint}`,
-        status,
-        code,
-      );
-
-    case 404:
-      return new ApiError(
-        `${punctuate(code ?? "Suite not found.")}${hint}`,
-        status,
-        code,
-      );
-
-    case 409:
-      return new ApiError(
-        `${punctuate(code ?? "Could not allocate a launch serial.")} Try again.${hint}`,
-        status,
-        code,
-      );
-
-    case 500:
-      if (code === "authentication_unavailable") {
-        return new ApiError(
-          `Authentication is temporarily unavailable. Your token may still be valid; retry shortly.${hint}`,
-          status,
-          code,
-        );
-      }
-
-      return new ApiError(
-        `${punctuate(code ?? "Robusty encountered an internal error starting the launch.")}${hint}`,
-        status,
-        code,
-      );
-
-    default:
-      return new ApiError(
-        `Unexpected response from Robusty (HTTP ${status}).${hint}`,
-        status,
-        code,
-      );
   }
 }
