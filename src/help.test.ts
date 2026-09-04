@@ -69,7 +69,7 @@ describe("showUsage", () => {
     const output = logSpy.mock.calls[0]?.[0] as string;
     expect(output).toContain("EXAMPLES");
     expect(output).toContain(
-      "robusty launch --suite=mt2lv --var=PROJECT_URL=https://robusty-pr-60.railway.app",
+      "robusty launch --suite=mt2lv --var PROJECT_URL=https://robusty-pr-60.railway.app",
     );
 
     logSpy.mockRestore();
