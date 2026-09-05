@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  Create, manage and run AI-powered end-to-end tests from your terminal or CI.
+  Run AI-powered Robusty tests from your terminal or CI.
 </p>
 
 ---
