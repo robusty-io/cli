@@ -12,7 +12,8 @@
     "robusty": "./dist/cli.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "type": "module",
   "publishConfig": {
@@ -27,7 +28,8 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "pretest": "pnpm run build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "changeset": "changeset"
   },
   "dependencies": {
     "@inquirer/select": "5.2.1",
@@ -38,6 +40,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@changesets/cli": "3.0.1",
     "@types/node": "22.20.1",
     "lefthook": "2.1.10",
     "oxfmt": "0.62.0",
