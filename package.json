@@ -1,6 +1,6 @@
 {
   "name": "@robusty/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Command-line interface for Robusty: create, manage and run tests from your terminal or CI",
   "homepage": "https://www.robusty.io/",
   "license": "MIT",
