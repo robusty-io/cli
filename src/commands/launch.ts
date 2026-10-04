@@ -173,13 +173,18 @@ export async function runLaunch(
     throw new CliError("Robusty returned an invalid launch response.");
   }
 
+  const suiteName = result.data.suiteName.trim().replace(/\s+/g, " ");
+
   const launchUrl = new URL(
     `/project/${encodeURIComponent(result.data.projectId)}/launches/${encodeURIComponent(result.data.slug)}`,
     config.webUrl,
   ).toString();
-  console.log(`Launch created: ${launchUrl}`);
+  console.log(`Launch created for suite "${suiteName}": ${launchUrl}`);
 
-  const renderer = dependencies.createRenderer(result.data.total);
+  const renderer = dependencies.createRenderer(
+    result.data.total,
+    result.data.tests,
+  );
   renderer.start();
 
   let launchResult;

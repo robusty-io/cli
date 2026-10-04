@@ -17,11 +17,26 @@ const spinnerMocks = vi.hoisted(() => {
 
 vi.mock("yocto-spinner", () => ({ default: spinnerMocks.create }));
 
+const tests = [
+  {
+    testCaseUid: "login",
+    testCaseSlug: "login-flow",
+    testCaseName: "Log in",
+    viewport: "desktop" as const,
+  },
+  {
+    testCaseUid: "8119525e-b766-4753-9ba4-2e2eb9f03a71",
+    testCaseSlug: "checkout-flow",
+    testCaseName: "Complete checkout",
+    viewport: "mobile" as const,
+  },
+];
+
 describe("createLaunchRenderer", () => {
   it("uses yocto-spinner for TTY progress", () => {
     const write = vi.fn();
     const output = { isTTY: true, write };
-    const renderer = createLaunchRenderer(2, output);
+    const renderer = createLaunchRenderer(2, tests, output);
 
     renderer.start();
     renderer.update({
@@ -74,7 +89,10 @@ describe("createLaunchRenderer", () => {
 
   it("prints stable progress and failed-test details outside a TTY", () => {
     const write = vi.fn();
-    const renderer = createLaunchRenderer(2, { isTTY: false, write });
+    const renderer = createLaunchRenderer(2, tests, {
+      isTTY: false,
+      write,
+    });
 
     renderer.start();
     renderer.update({
@@ -121,11 +139,11 @@ describe("createLaunchRenderer", () => {
     expect(write.mock.calls.flat().join("")).toBe(
       [
         "Running 2 tests...",
-        "[PASS] login-flow",
+        "[PASS] login-flow: Log in (desktop)",
         "Test suite failed: 1 passed, 1 failed cases.",
         "",
         "Failed tests (1):",
-        "- checkout-flow: Button stayed disabled because payment details were invalid.",
+        "- [checkout-flow] Complete checkout (mobile): Button stayed disabled because payment details were invalid.",
         "",
         "View full logs: https://www.robusty.io/project/project-1/launches/launch-1",
         "",

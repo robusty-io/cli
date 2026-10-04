@@ -15,22 +15,49 @@ export interface LaunchRenderer {
   stop: () => void;
 }
 
+export interface LaunchTestMetadata {
+  testCaseUid: string;
+  testCaseSlug: string;
+  testCaseName: string;
+  viewport: "desktop" | "mobile";
+}
+
 function progressLine(progress: LaunchProgress): string {
   return `Running ${progress.total} tests: ${progress.passed} passed, ${progress.failed} failed, ${progress.running} remaining`;
 }
 
-function failureLine(test: LaunchResult["tests"][number]): string {
+function testLabel(
+  test: LaunchResult["tests"][number],
+  metadata: Map<string, LaunchTestMetadata>,
+): string {
+  const details = metadata.get(test.testCaseUid);
+  if (!details) return test.testCaseSlug;
+
+  const name = details.testCaseName.trim().replace(/\s+/g, " ");
+  return `${details.testCaseSlug}: ${name} (${details.viewport})`;
+}
+
+function failureLine(
+  test: LaunchResult["tests"][number],
+  metadata: Map<string, LaunchTestMetadata>,
+): string {
   const conclusion =
     test.conclusion?.trim().replace(/\s+/g, " ") || "Test failed";
   const punctuation = /[.!?]$/.test(conclusion) ? "" : ".";
-  return `- ${test.testCaseSlug}: ${conclusion}${punctuation}\n`;
+  const details = metadata.get(test.testCaseUid);
+  const label = details
+    ? `[${details.testCaseSlug}] ${details.testCaseName.trim().replace(/\s+/g, " ")} (${details.viewport})`
+    : `[${test.testCaseSlug}]`;
+  return `- ${label}: ${conclusion}${punctuation}\n`;
 }
 
 export function createLaunchRenderer(
   total: number,
+  tests: LaunchTestMetadata[],
   output: OutputStream = process.stdout,
 ): LaunchRenderer {
   const tty = output.isTTY === true;
+  const metadata = new Map(tests.map((test) => [test.testCaseUid, test]));
   const printed = new Set<string>();
   let progress: LaunchProgress = {
     total,
@@ -73,7 +100,7 @@ export function createLaunchRenderer(
       for (const test of progress.tests) {
         if (test.status !== "passed" || printed.has(test.testCaseUid)) continue;
         printed.add(test.testCaseUid);
-        output.write(`[PASS] ${test.testCaseSlug}\n`);
+        output.write(`[PASS] ${testLabel(test, metadata)}\n`);
       }
     },
 
@@ -96,7 +123,7 @@ export function createLaunchRenderer(
       }
 
       for (const test of failures) {
-        output.write(failureLine(test));
+        output.write(failureLine(test, metadata));
       }
 
       if (result.failed > 0) {

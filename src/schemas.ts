@@ -31,7 +31,16 @@ export const launchStartResponseSchema = z.object({
   launchId: nonBlankString,
   projectId: nonBlankString,
   slug: nonBlankString,
+  suiteName: nonBlankString,
   total: z.number().int().nonnegative(),
+  tests: z.array(
+    z.object({
+      testCaseUid: nonBlankString,
+      testCaseSlug: nonBlankString,
+      testCaseName: nonBlankString,
+      viewport: z.enum(["desktop", "mobile"]),
+    }),
+  ),
   wsTicket: nonBlankString,
   quota: z
     .object({

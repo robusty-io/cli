@@ -22,7 +22,22 @@ const startResponse = {
   launchId: "launch-id",
   projectId: "project-web-id",
   slug: "launch-slug",
+  suiteName: "Checkout suite",
   total: 2,
+  tests: [
+    {
+      testCaseUid: "login",
+      testCaseSlug: "login-flow",
+      testCaseName: "Log in",
+      viewport: "desktop" as const,
+    },
+    {
+      testCaseUid: "checkout",
+      testCaseSlug: "checkout-flow",
+      testCaseName: "Complete checkout",
+      viewport: "mobile" as const,
+    },
+  ],
   wsTicket: "socket-ticket",
 };
 
@@ -136,12 +151,16 @@ describe("runLaunch", () => {
     expect(log).toHaveBeenNthCalledWith(1, "Creating test launch...");
     expect(log).toHaveBeenNthCalledWith(
       2,
-      "Launch created: https://www.robusty.io/project/project-web-id/launches/launch-slug",
+      'Launch created for suite "Checkout suite": https://www.robusty.io/project/project-web-id/launches/launch-slug',
     );
     expect(mocks.observe).toHaveBeenCalledWith(
       config,
       { slug: "launch-slug", wsTicket: "socket-ticket", total: 2 },
       { onUpdate: mocks.renderer.update, debug: true },
+    );
+    expect(mocks.dependencies.createRenderer).toHaveBeenCalledWith(
+      2,
+      startResponse.tests,
     );
     expect(mocks.renderer.start).toHaveBeenCalledOnce();
     expect(mocks.renderer.finish).toHaveBeenCalledWith(
